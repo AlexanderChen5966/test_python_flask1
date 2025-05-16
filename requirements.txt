@@ -1,0 +1,8 @@
+flask
+flasgger
+flask_sqlalchemy
+pymysql
+gunicorn
+line-bot-sdk
+python-dotenv
+
