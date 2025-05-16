@@ -258,6 +258,50 @@ def callback():
 
 
 # 處理 LINE 訊息
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    line_user_id = event.source.user_id
+    user = User.query.filter_by(line_user_id=line_user_id).first()
+
+    # 如果用戶不存在就註冊
+    if not user:
+        try:
+            profile = line_bot_api.get_profile(line_user_id)
+            display_name = profile.display_name
+        except:
+            display_name = "LINE User"
+        user = User(line_user_id=line_user_id, name=display_name)
+        db.session.add(user)
+        db.session.commit()
+
+    user_id = user.user_id
+    text = event.message.text.strip().lower()
+
+    # 處理不同指令
+    if text == "查詢":
+        checkins = Checkin.query.filter_by(user_id=user_id).all()
+        if checkins:
+            reply = "\n".join([c.checkin_time.strftime("%Y-%m-%d %H:%M:%S") for c in checkins])
+            reply_text = f"📅 你的打卡紀錄：\n{reply}"
+        else:
+            reply_text = "❌ 你還沒有任何打卡紀錄喔。"
+
+    elif text == "打卡":
+        new_checkin = Checkin(user_id=user_id)
+        db.session.add(new_checkin)
+        db.session.commit()
+        reply_text = "✅ 你已成功打卡！"
+
+    else:
+        reply_text = "請輸入『打卡』或『查詢』來使用服務！"
+
+    # 回覆訊息
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply_text)
+    )
+
+
 # @handler.add(MessageEvent, message=TextMessage)
 # def handle_message(event):
 #     line_user_id = event.source.user_id
@@ -293,49 +337,6 @@ def callback():
 #         event.reply_token,
 #         TextSendMessage(text=reply_text)
 #     )
-
-    @handler.add(MessageEvent, message=TextMessage)
-    def handle_message(event):
-        line_user_id = event.source.user_id
-        user = User.query.filter_by(line_user_id=line_user_id).first()
-
-        # 如果用戶不存在就註冊
-        if not user:
-            try:
-                profile = line_bot_api.get_profile(line_user_id)
-                display_name = profile.display_name
-            except:
-                display_name = "LINE User"
-            user = User(line_user_id=line_user_id, name=display_name)
-            db.session.add(user)
-            db.session.commit()
-
-        user_id = user.user_id
-        text = event.message.text.strip().lower()
-
-        # 處理不同指令
-        if text == "查詢":
-            checkins = Checkin.query.filter_by(user_id=user_id).all()
-            if checkins:
-                reply = "\n".join([c.checkin_time.strftime("%Y-%m-%d %H:%M:%S") for c in checkins])
-                reply_text = f"📅 你的打卡紀錄：\n{reply}"
-            else:
-                reply_text = "❌ 你還沒有任何打卡紀錄喔。"
-
-        elif text == "打卡":
-            new_checkin = Checkin(user_id=user_id)
-            db.session.add(new_checkin)
-            db.session.commit()
-            reply_text = "✅ 你已成功打卡！"
-
-        else:
-            reply_text = "請輸入『打卡』或『查詢』來使用服務！"
-
-        # 回覆訊息
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_text)
-        )
 
 
 # @handler.add(MessageEvent, message=TextMessage)
