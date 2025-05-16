@@ -233,6 +233,15 @@ def register_user():
 
     return jsonify({"message": "User registered successfully"}), 201
 
+# 查詢所有用戶的 API
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    users = User.query.all()
+    user_list = [
+        {"user_id": user.user_id, "line_user_id": user.line_user_id, "name": user.name}
+        for user in users
+    ]
+    return jsonify({"users": user_list})
 
 # 設置 LINE Webhook 路由
 @app.route("/callback", methods=["POST"])
@@ -249,41 +258,85 @@ def callback():
 
 
 # 處理 LINE 訊息
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    line_user_id = event.source.user_id
+# @handler.add(MessageEvent, message=TextMessage)
+# def handle_message(event):
+#     line_user_id = event.source.user_id
+#
+#     # 檢查用戶是否存在
+#     user = User.query.filter_by(line_user_id=line_user_id).first()
+#
+#     if not user:
+#         # 如果用戶不存在，就從 LINE API 拿名字並註冊
+#         try:
+#             profile = line_bot_api.get_profile(line_user_id)
+#             display_name = profile.display_name
+#         except Exception as e:
+#             print("Error fetching profile:", e)
+#             display_name = "LINE User"
+#
+#         new_user = User(line_user_id=line_user_id, name=display_name)
+#         db.session.add(new_user)
+#         db.session.commit()
+#
+#         reply_text = f"歡迎你，{display_name}！你已完成註冊 ✅"
+#     else:
+#         # 如果用戶已存在，就打招呼
+#         reply_text = f"歡迎回來，{user.name}！你已成功打卡 ✅"
+#
+#         # 也可以順便自動記一筆打卡紀錄
+#         checkin = Checkin(user_id=user.user_id)
+#         db.session.add(checkin)
+#         db.session.commit()
+#
+#     # 回覆使用者訊息
+#     line_bot_api.reply_message(
+#         event.reply_token,
+#         TextSendMessage(text=reply_text)
+#     )
 
-    # 檢查用戶是否存在
-    user = User.query.filter_by(line_user_id=line_user_id).first()
+    @handler.add(MessageEvent, message=TextMessage)
+    def handle_message(event):
+        line_user_id = event.source.user_id
+        user = User.query.filter_by(line_user_id=line_user_id).first()
 
-    if not user:
-        # 如果用戶不存在，就從 LINE API 拿名字並註冊
-        try:
-            profile = line_bot_api.get_profile(line_user_id)
-            display_name = profile.display_name
-        except Exception as e:
-            print("Error fetching profile:", e)
-            display_name = "LINE User"
+        # 如果用戶不存在就註冊
+        if not user:
+            try:
+                profile = line_bot_api.get_profile(line_user_id)
+                display_name = profile.display_name
+            except:
+                display_name = "LINE User"
+            user = User(line_user_id=line_user_id, name=display_name)
+            db.session.add(user)
+            db.session.commit()
 
-        new_user = User(line_user_id=line_user_id, name=display_name)
-        db.session.add(new_user)
-        db.session.commit()
+        user_id = user.user_id
+        text = event.message.text.strip().lower()
 
-        reply_text = f"歡迎你，{display_name}！你已完成註冊 ✅"
-    else:
-        # 如果用戶已存在，就打招呼
-        reply_text = f"歡迎回來，{user.name}！你已成功打卡 ✅"
+        # 處理不同指令
+        if text == "查詢":
+            checkins = Checkin.query.filter_by(user_id=user_id).all()
+            if checkins:
+                reply = "\n".join([c.checkin_time.strftime("%Y-%m-%d %H:%M:%S") for c in checkins])
+                reply_text = f"📅 你的打卡紀錄：\n{reply}"
+            else:
+                reply_text = "❌ 你還沒有任何打卡紀錄喔。"
 
-        # 也可以順便自動記一筆打卡紀錄
-        checkin = Checkin(user_id=user.user_id)
-        db.session.add(checkin)
-        db.session.commit()
+        elif text == "打卡":
+            new_checkin = Checkin(user_id=user_id)
+            db.session.add(new_checkin)
+            db.session.commit()
+            reply_text = "✅ 你已成功打卡！"
 
-    # 回覆使用者訊息
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply_text)
-    )
+        else:
+            reply_text = "請輸入『打卡』或『查詢』來使用服務！"
+
+        # 回覆訊息
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply_text)
+        )
+
 
 # @handler.add(MessageEvent, message=TextMessage)
 # def handle_message(event):
