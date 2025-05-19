@@ -29,8 +29,10 @@ db = SQLAlchemy(app)
 # Channel ID  1567481099
 # LINE_CHANNEL_SECRET:39a8506293131666215364ce4a6cffeb
 # Channel access token: eilzTMbjJ5eW0VUGlFNXnp6ofs8XfekOSnbW513ktpCNaNZSImAChjyP7fOB5G9u0eagtJrNtGInHzffSyWg/9OiX8ZVznj8/rPbDcrCIPbf5wTfaV1rJOHCvFS8sKZu667TqsT7lQFtJ64qRexUxQdB04t89/1O/w1cDnyilFU=
-LINE_CHANNEL_SECRET = "39a8506293131666215364ce4a6cffeb"
-LINE_CHANNEL_ACCESS_TOKEN = "eilzTMbjJ5eW0VUGlFNXnp6ofs8XfekOSnbW513ktpCNaNZSImAChjyP7fOB5G9u0eagtJrNtGInHzffSyWg/9OiX8ZVznj8/rPbDcrCIPbf5wTfaV1rJOHCvFS8sKZu667TqsT7lQFtJ64qRexUxQdB04t89/1O/w1cDnyilFU="
+# LINE_CHANNEL_SECRET = "39a8506293131666215364ce4a6cffeb"
+# LINE_CHANNEL_ACCESS_TOKEN = "eilzTMbjJ5eW0VUGlFNXnp6ofs8XfekOSnbW513ktpCNaNZSImAChjyP7fOB5G9u0eagtJrNtGInHzffSyWg/9OiX8ZVznj8/rPbDcrCIPbf5wTfaV1rJOHCvFS8sKZu667TqsT7lQFtJ64qRexUxQdB04t89/1O/w1cDnyilFU="
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
 # 初始化 LINE Bot API 和 WebhookHandler
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -236,12 +238,37 @@ def register_user():
 # 查詢所有用戶的 API
 @app.route('/api/users', methods=['GET'])
 def get_users():
+    """
+    Get a list of all registered users
+    ---
+    responses:
+      200:
+        description: A list of all users in the system
+        schema:
+          type: object
+          properties:
+            users:
+              type: array
+              items:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    description: User's unique ID
+                  line_user_id:
+                    type: string
+                    description: User's LINE user ID
+                  name:
+                    type: string
+                    description: User's name
+    """
     users = User.query.all()
     user_list = [
         {"user_id": user.user_id, "line_user_id": user.line_user_id, "name": user.name}
         for user in users
     ]
     return jsonify({"users": user_list})
+
 
 # 設置 LINE Webhook 路由
 @app.route("/callback", methods=["POST"])
