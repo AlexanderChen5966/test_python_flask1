@@ -15,22 +15,12 @@ load_dotenv()  # 會自動從根目錄的 .env 檔載入變數
 # 設定資料庫配置（MySQL）
 # Flasgger文件網址: https://testpythonflask1-production.up.railway.app/apidocs
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('MYSQL_PUBLIC_URL')  # 設定 MySQL 資料庫 URI（從 Railway 取得）
-# app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:LepIwlpQcMsIqKKSMMrSbpSasaEDLywE@caboose.proxy.rlwy.net:56460/railway"
-# app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://root:WWMfPkrHYAFzMKjWMKsyPSacMJBjVIIo@interchange.proxy.rlwy.net:58470/railway'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # 設定 LINE API 的 Token 和 Secret
 # line
 # https://testpythonflask1-production.up.railway.app/callback
-# LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
-# LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
-
-# Channel ID  1567481099
-# LINE_CHANNEL_SECRET:39a8506293131666215364ce4a6cffeb
-# Channel access token: eilzTMbjJ5eW0VUGlFNXnp6ofs8XfekOSnbW513ktpCNaNZSImAChjyP7fOB5G9u0eagtJrNtGInHzffSyWg/9OiX8ZVznj8/rPbDcrCIPbf5wTfaV1rJOHCvFS8sKZu667TqsT7lQFtJ64qRexUxQdB04t89/1O/w1cDnyilFU=
-# LINE_CHANNEL_SECRET = "39a8506293131666215364ce4a6cffeb"
-# LINE_CHANNEL_ACCESS_TOKEN = "eilzTMbjJ5eW0VUGlFNXnp6ofs8XfekOSnbW513ktpCNaNZSImAChjyP7fOB5G9u0eagtJrNtGInHzffSyWg/9OiX8ZVznj8/rPbDcrCIPbf5wTfaV1rJOHCvFS8sKZu667TqsT7lQFtJ64qRexUxQdB04t89/1O/w1cDnyilFU="
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
 LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
 # 初始化 LINE Bot API 和 WebhookHandler
@@ -42,7 +32,6 @@ swagger = Swagger(app)
 
 
 # 定義資料庫模型
-
 # 用戶資料表格
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -327,53 +316,6 @@ def handle_message(event):
         event.reply_token,
         TextSendMessage(text=reply_text)
     )
-
-
-# @handler.add(MessageEvent, message=TextMessage)
-# def handle_message(event):
-#     line_user_id = event.source.user_id
-#
-#     # 檢查用戶是否存在
-#     user = User.query.filter_by(line_user_id=line_user_id).first()
-#
-#     if not user:
-#         # 如果用戶不存在，就從 LINE API 拿名字並註冊
-#         try:
-#             profile = line_bot_api.get_profile(line_user_id)
-#             display_name = profile.display_name
-#         except Exception as e:
-#             print("Error fetching profile:", e)
-#             display_name = "LINE User"
-#
-#         new_user = User(line_user_id=line_user_id, name=display_name)
-#         db.session.add(new_user)
-#         db.session.commit()
-#
-#         reply_text = f"歡迎你，{display_name}！你已完成註冊 ✅"
-#     else:
-#         # 如果用戶已存在，就打招呼
-#         reply_text = f"歡迎回來，{user.name}！你已成功打卡 ✅"
-#
-#         # 也可以順便自動記一筆打卡紀錄
-#         checkin = Checkin(user_id=user.user_id)
-#         db.session.add(checkin)
-#         db.session.commit()
-#
-#     # 回覆使用者訊息
-#     line_bot_api.reply_message(
-#         event.reply_token,
-#         TextSendMessage(text=reply_text)
-#     )
-
-
-# @handler.add(MessageEvent, message=TextMessage)
-# def handle_message(event):
-#     # 回覆用戶訊息
-#     line_bot_api.reply_message(
-#         event.reply_token,
-#         TextMessage(text='You have successfully checked in!')
-#     )
-
 
 # 啟動 Flask 應用
 if __name__ == "__main__":
